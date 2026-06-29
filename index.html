@@ -3,144 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мой TeraBox плеер</title>
+    <title>Тест плееров TeraBox</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0a0a0a; font-family: system-ui, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .container { max-width: 900px; width: 95%; background: #1a1a1a; padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-        h1 { color: #fff; font-size: 24px; margin-bottom: 10px; }
-        p.sub { color: #888; font-size: 14px; margin-bottom: 20px; }
-        .input-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .input-group input { flex: 1; padding: 14px 18px; border-radius: 8px; border: none; background: #2a2a2a; color: #fff; font-size: 16px; min-width: 200px; }
-        .input-group button { padding: 14px 28px; border: none; border-radius: 8px; background: #e50914; color: #fff; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
-        .input-group button:hover { background: #f6121d; }
-        .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; background: #000; margin-bottom: 20px; }
-        .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
-        .embed-section { background: #222; padding: 15px; border-radius: 8px; }
-        .embed-section p { color: #aaa; font-size: 14px; margin-bottom: 8px; }
-        .embed-section .code { background: #111; padding: 12px; border-radius: 6px; color: #4caf50; font-family: monospace; font-size: 13px; word-break: break-all; user-select: all; cursor: pointer; border: 1px solid #333; }
-        .embed-section .code:hover { border-color: #555; }
-        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 8px; opacity: 0; transition: opacity 0.3s; pointer-events: none; font-size: 14px; }
-        .toast.show { opacity: 1; }
-        .note { color: #666; font-size: 13px; margin-top: 12px; border-top: 1px solid #333; padding-top: 12px; }
-        .note a { color: #4caf50; }
+        body { background: #0a0a0a; color: #fff; font-family: sans-serif; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { text-align: center; margin-bottom: 30px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: #1a1a1a; padding: 15px; border-radius: 12px; border: 1px solid #333; }
+        .card h3 { margin-top: 0; color: #ffaa00; font-size: 16px; }
+        .card iframe { width: 100%; height: 250px; border-radius: 8px; border: none; }
+        .card .status { font-size: 13px; margin-top: 8px; padding: 4px 10px; border-radius: 4px; display: inline-block; }
+        .ok { background: #2e7d32; color: #a5d6a7; }
+        .fail { background: #c62828; color: #ef9a9a; }
+        .unknown { background: #f57f17; color: #fff; }
+        .note { font-size: 13px; color: #aaa; margin-top: 5px; }
+        @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>🎬 Мой TeraBox плеер</h1>
-    <p class="sub">Вставь ссылку на TeraBox → получи готовый iframe</p>
-
-    <div class="input-group">
-        <input type="text" id="videoUrl" placeholder="https://1024terabox.com/s/..." value="https://1024terabox.com/s/1302xc38q_rJ7HR6Rrrpobw">
-        <button id="loadBtn">▶ Загрузить</button>
-    </div>
-
-    <div class="video-wrapper">
-        <iframe id="playerIframe" src="about:blank" allowfullscreen></iframe>
-    </div>
-
-    <div class="embed-section">
-        <p>📋 Код для вставки (нажми, чтобы скопировать):</p>
-        <div class="code" id="embedCode">Здесь появится iframe-код...</div>
-    </div>
-    <div class="note">
-        ⚠️ Если видео не грузится — попробуй <a href="#" id="switchMethod">переключить метод</a> (официальный embed / прокси)
+    <h1>🧪 Тестирование плееров TeraBox</h1>
+    <p style="text-align:center; color:#888;">Ссылка для теста: <code>https://1024terabox.com/s/1OESPcutND0BnZo_xlPqCDA</code></p>
+    <div class="grid" id="playerGrid">
+        <!-- Карточки будут добавлены через JS -->
     </div>
 </div>
 
-<div class="toast" id="toast">✅ Скопировано!</div>
-
 <script>
-    // ============= НАСТРОЙКИ =============
-    // Методы встраивания: 'official' (официальный embed) или 'proxy' (через сторонний прокси)
-    let currentMethod = 'official';
+    // Общая ссылка для теста
+    const TEST_LINK = 'https://1024terabox.com/s/1OESPcutND0BnZo_xlPqCDA';
 
-    const iframe = document.getElementById('playerIframe');
-    const input = document.getElementById('videoUrl');
-    const loadBtn = document.getElementById('loadBtn');
-    const embedCode = document.getElementById('embedCode');
-    const toast = document.getElementById('toast');
-    const switchLink = document.getElementById('switchMethod');
-
-    // ============= ФУНКЦИЯ ГЕНЕРАЦИИ EMBED =============
-    function generateEmbed(url) {
-        if (currentMethod === 'official') {
-            // Официальный метод TeraBox: https://www.terabox.com/embed?link=URL
-            return `<iframe src="https://www.terabox.com/embed?link=${encodeURIComponent(url)}" width="700" height="400" frameborder="0" allowfullscreen></iframe>`;
-        } else {
-            // Прокси-метод через cu-sanjay (если его сервер ещё жив)
-            // Или можно использовать любой другой прокси
-            const proxyUrl = `https://cu-sanjay.github.io/TeraBox/player.html?url=${encodeURIComponent(url)}`;
-            return `<iframe src="${proxyUrl}" width="700" height="400" frameborder="0" allowfullscreen></iframe>`;
+    // Список вариантов плееров
+    const variants = [
+        {
+            name: 'terabox.tech (старый)',
+            url: `https://www.terabox.tech/play.html?url=${encodeURIComponent(TEST_LINK)}`,
+            status: 'unknown'
+        },
+        {
+            name: 'tsecurity.de',
+            url: `https://tsecurity.de/TeraBox/?url=${encodeURIComponent(TEST_LINK)}`,
+            status: 'unknown'
+        },
+        {
+            name: 'cu-sanjay.github.io',
+            url: `https://cu-sanjay.github.io/TeraBox/player.html?url=${encodeURIComponent(TEST_LINK)}`,
+            status: 'unknown'
+        },
+        {
+            name: 'sannjay.tech (мёртв)',
+            url: `https://sannjay.tech/TeraBox/player.html?url=${encodeURIComponent(TEST_LINK)}`,
+            status: 'unknown'
+        },
+        {
+            name: 'terabox.app (старый)',
+            url: `https://terabox.app/player.html?url=${encodeURIComponent(TEST_LINK)}`,
+            status: 'unknown'
+        },
+        {
+            name: 'teraboxapps.blogspot',
+            url: `https://teraboxapps.blogspot.com/?url=${encodeURIComponent(TEST_LINK)}`,
+            status: 'unknown'
         }
-    }
+    ];
 
-    // ============= ЗАГРУЗКА ВИДЕО =============
-    function loadVideo() {
-        const url = input.value.trim();
-        if (!url) {
-            alert('Вставь ссылку на TeraBox!');
-            return;
-        }
-
-        // Генерируем iframe-код
-        const iframeHtml = generateEmbed(url);
-        embedCode.textContent = iframeHtml;
-
-        // Извлекаем src и вставляем в iframe
-        const match = iframeHtml.match(/src="([^"]+)"/);
-        if (match) {
-            iframe.src = match[1];
-        } else {
-            iframe.src = 'about:blank';
-        }
-    }
-
-    // ============= ПЕРЕКЛЮЧЕНИЕ МЕТОДА =============
-    function switchMethod() {
-        if (currentMethod === 'official') {
-            currentMethod = 'proxy';
-            switchLink.textContent = 'официальный embed';
-            document.querySelector('.note').innerHTML = `⚠️ Используется прокси-метод. Попробуй <a href="#" id="switchMethod">официальный embed</a>`;
-        } else {
-            currentMethod = 'official';
-            switchLink.textContent = 'прокси-метод';
-            document.querySelector('.note').innerHTML = `⚠️ Используется официальный embed. Попробуй <a href="#" id="switchMethod">прокси-метод</a>`;
-        }
-        // Перезагружаем видео
-        loadVideo();
-        // Перепривязываем обработчик
-        document.getElementById('switchMethod').addEventListener('click', function(e) {
-            e.preventDefault();
-            switchMethod();
-        });
-    }
-
-    // ============= КОПИРОВАНИЕ =============
-    embedCode.addEventListener('click', function() {
-        const text = this.textContent;
-        if (text && !text.includes('Здесь появится')) {
-            navigator.clipboard.writeText(text).then(() => {
-                toast.classList.add('show');
-                setTimeout(() => toast.classList.remove('show'), 2000);
-            }).catch(() => {});
-        }
+    // Дополнительно – ваш Cloudflare Worker (если он живой)
+    // (замените URL на ваш, если нужно)
+    variants.push({
+        name: 'Ваш Cloudflare Worker (POST)',
+        url: `https://terabox-proxy.lapcomp.workers.dev/proxy?url=${encodeURIComponent(TEST_LINK)}&file_name=video.mp4`,
+        status: 'unknown'
     });
 
-    // ============= СОБЫТИЯ =============
-    loadBtn.addEventListener('click', loadVideo);
-    input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') loadVideo();
-    });
+    const grid = document.getElementById('playerGrid');
 
-    switchLink.addEventListener('click', function(e) {
-        e.preventDefault();
-        switchMethod();
-    });
+    variants.forEach(v => {
+        const card = document.createElement('div');
+        card.className = 'card';
 
-    // ============= АВТОЗАГРУЗКА =============
-    loadVideo();
+        let statusText = 'неизвестно';
+        let statusClass = 'unknown';
+        if (v.status === 'ok') { statusText = '✅ работает'; statusClass = 'ok'; }
+        else if (v.status === 'fail') { statusText = '❌ не работает'; statusClass = 'fail'; }
+
+        card.innerHTML = `
+            <h3>${v.name}</h3>
+            <iframe src="${v.url}" allowfullscreen loading="lazy"></iframe>
+            <div>
+                <span class="status ${statusClass}">${statusText}</span>
+                <div class="note">${v.url}</div>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
 </script>
 </body>
 </html>
