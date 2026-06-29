@@ -3,42 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔗 TeraBox → iframe конвертер</title>
+    <title>Тестирование TeraBox плееров</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0a0a0a; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: system-ui, sans-serif; }
-        .container { width: 90%; max-width: 800px; background: #1a1a1a; padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-        h1 { color: #fff; font-size: 24px; margin-bottom: 20px; text-align: center; }
+        body { background: #0a0a0a; font-family: system-ui, sans-serif; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { color: #fff; font-size: 22px; margin-bottom: 20px; }
         .input-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .input-group input { flex: 1; padding: 12px 16px; border-radius: 8px; border: none; background: #2a2a2a; color: #fff; font-size: 16px; min-width: 200px; }
-        .input-group button { padding: 12px 24px; border: none; border-radius: 8px; background: #e50914; color: #fff; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .input-group button:hover { background: #f6121d; }
+        .input-group input { flex: 1; padding: 12px 16px; border-radius: 8px; border: none; background: #2a2a2a; color: #fff; font-size: 14px; min-width: 200px; }
+        
+        .buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+        .buttons button { padding: 10px 18px; border: none; border-radius: 8px; background: #2a2a2a; color: #fff; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .buttons button:hover { background: #3a3a3a; }
+        .buttons button.active { background: #e50914; color: #fff; }
+        .buttons button.success { background: #4caf50; color: #fff; }
+        .buttons button.fail { background: #555; color: #888; }
+        
         .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; background: #000; margin-bottom: 20px; }
         .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+        
+        .status { color: #aaa; font-size: 14px; margin-bottom: 10px; min-height: 24px; }
+        .status .ok { color: #4caf50; }
+        .status .err { color: #e50914; }
+        
         .embed-section { background: #222; padding: 15px; border-radius: 8px; }
         .embed-section p { color: #aaa; font-size: 14px; margin-bottom: 8px; }
-        .embed-section .code { background: #111; padding: 12px; border-radius: 6px; color: #4caf50; font-family: monospace; word-break: break-all; user-select: all; cursor: pointer; border: 1px solid #333; }
+        .embed-section .code { background: #111; padding: 12px; border-radius: 6px; color: #4caf50; font-family: monospace; font-size: 13px; word-break: break-all; user-select: all; cursor: pointer; border: 1px solid #333; }
         .embed-section .code:hover { border-color: #555; }
-        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 8px; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 8px; opacity: 0; transition: opacity 0.3s; pointer-events: none; font-size: 14px; }
         .toast.show { opacity: 1; }
+        .provider-status { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-left: 8px; }
+        .provider-status.loading { background: #ffaa00; animation: blink 0.8s infinite; }
+        .provider-status.ok { background: #4caf50; }
+        .provider-status.fail { background: #e50914; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🔗 Вставь ссылку TeraBox → получи iframe</h1>
+    <h1>🧪 Тест TeraBox плееров</h1>
 
     <div class="input-group">
-        <input type="text" id="videoUrl" placeholder="https://1024terabox.com/s/...">
-        <button id="loadBtn">▶ Сгенерировать</button>
+        <input type="text" id="videoUrl" placeholder="Ссылка на TeraBox..." value="https://1024terabox.com/s/1302xc38q_rJ7HR6Rrrpobw">
     </div>
+
+    <div class="buttons" id="buttonsContainer">
+        <!-- Кнопки будут добавлены через JS -->
+    </div>
+
+    <div class="status" id="status">Выбери вариант →</div>
 
     <div class="video-wrapper">
         <iframe id="playerIframe" src="about:blank" allowfullscreen></iframe>
     </div>
 
     <div class="embed-section">
-        <p>📋 Готовый код для вставки (нажми, чтобы скопировать):</p>
+        <p>📋 Код для вставки (нажми, чтобы скопировать):</p>
         <div class="code" id="embedCode">Здесь появится iframe-код...</div>
     </div>
 </div>
@@ -46,33 +67,114 @@
 <div class="toast" id="toast">✅ Скопировано!</div>
 
 <script>
+    // ============= ВАРИАНТЫ ПЛЕЕРОВ ДЛЯ ТЕСТА =============
+    const providers = [
+        {
+            id: 'terabox.tech',
+            label: 'terabox.tech',
+            url: (url) => `https://www.terabox.tech/play.html?url=${encodeURIComponent(url)}`
+        },
+        {
+            id: 'terabox.app',
+            label: 'terabox.app',
+            url: (url) => `https://terabox.app/player.html?url=${encodeURIComponent(url)}`
+        },
+        {
+            id: 'tsecurity.de',
+            label: 'tsecurity.de',
+            url: (url) => `https://tsecurity.de/TeraBox/?url=${encodeURIComponent(url)}`
+        },
+        {
+            id: 'teraboxplyr.blogspot',
+            label: 'teraboxplyr.blogspot',
+            url: (url) => `https://teraboxplyr.blogspot.com/p/player.html?url=${encodeURIComponent(url)}`
+        },
+        {
+            id: 'sannjay.tech',
+            label: 'sannjay.tech',
+            url: (url) => `https://sannjay.tech/TeraBox/player.html?url=${encodeURIComponent(url)}`
+        },
+        {
+            id: 'direct',
+            label: 'Прямая ссылка (опасно)',
+            url: (url) => url
+        }
+    ];
+
+    // ============= СОСТОЯНИЕ =============
+    let currentProvider = null;
     const iframe = document.getElementById('playerIframe');
     const input = document.getElementById('videoUrl');
-    const loadBtn = document.getElementById('loadBtn');
+    const statusDiv = document.getElementById('status');
     const embedCode = document.getElementById('embedCode');
+    const buttonsContainer = document.getElementById('buttonsContainer');
     const toast = document.getElementById('toast');
 
-    function generateEmbed(url) {
-        // Используем публичный плеер sannjay.tech
-        const encoded = encodeURIComponent(url);
-        const playerUrl = `https://sannjay.tech/TeraBox/player.html?url=${encoded}`;
-        return `<iframe src="${playerUrl}" width="700" height="400" frameborder="0" allowfullscreen></iframe>`;
-    }
+    // ============= СОЗДАЁМ КНОПКИ =============
+    providers.forEach(p => {
+        const btn = document.createElement('button');
+        btn.dataset.provider = p.id;
+        btn.innerHTML = p.label + ' <span class="provider-status" id="status-' + p.id + '"></span>';
+        btn.addEventListener('click', () => testProvider(p.id));
+        buttonsContainer.appendChild(btn);
+    });
 
-    function loadVideo() {
+    // ============= ТЕСТИРОВАНИЕ =============
+    async function testProvider(providerId) {
+        const provider = providers.find(p => p.id === providerId);
+        if (!provider) return;
+
         const url = input.value.trim();
-        if (!url) return alert('Вставь ссылку на TeraBox!');
+        if (!url) {
+            statusDiv.innerHTML = '❌ Вставь ссылку на TeraBox!';
+            return;
+        }
 
-        // Генерируем iframe-код
-        const iframeHtml = generateEmbed(url);
-        embedCode.textContent = iframeHtml;
+        // Обновляем состояние кнопок
+        document.querySelectorAll('.buttons button').forEach(b => b.classList.remove('active', 'success', 'fail'));
+        const btn = document.querySelector(`.buttons button[data-provider="${providerId}"]`);
+        if (btn) btn.classList.add('active');
 
-        // Обновляем плеер
-        const match = iframeHtml.match(/src="([^"]+)"/);
-        iframe.src = match ? match[1] : 'about:blank';
+        const statusEl = document.getElementById('status-' + providerId);
+        if (statusEl) statusEl.className = 'provider-status loading';
+
+        statusDiv.innerHTML = `🔄 Проверяю <b>${provider.label}</b>...`;
+
+        try {
+            const playerUrl = provider.url(url);
+            
+            // Пробуем загрузить плеер
+            iframe.src = playerUrl;
+            
+            // Ждём 3 секунды и проверяем, загрузился ли плеер
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            
+            // Проверяем, смог ли iframe загрузить контент
+            // Если iframe загрузился, то он перестаёт быть about:blank
+            const isLoaded = iframe.src !== 'about:blank' && !iframe.src.includes('about:blank');
+            
+            if (isLoaded) {
+                if (statusEl) statusEl.className = 'provider-status ok';
+                if (btn) btn.classList.add('success');
+                statusDiv.innerHTML = `✅ <span class="ok"><b>${provider.label}</b> работает!</span>`;
+                
+                // Показываем код для вставки
+                const embedHtml = `<iframe src="${playerUrl}" width="700" height="400" frameborder="0" allowfullscreen></iframe>`;
+                embedCode.textContent = embedHtml;
+                currentProvider = providerId;
+            } else {
+                if (statusEl) statusEl.className = 'provider-status fail';
+                if (btn) btn.classList.add('fail');
+                statusDiv.innerHTML = `❌ <span class="err"><b>${provider.label}</b> не загрузился (попробуй другой)</span>`;
+            }
+        } catch(e) {
+            if (statusEl) statusEl.className = 'provider-status fail';
+            if (btn) btn.classList.add('fail');
+            statusDiv.innerHTML = `❌ <span class="err"><b>${provider.label}</b> ошибка: ${e.message}</span>`;
+        }
     }
 
-    // Клик по коду → копирование
+    // ============= КОПИРОВАНИЕ =============
     embedCode.addEventListener('click', function() {
         const text = this.textContent;
         if (text && !text.includes('Здесь появится')) {
@@ -83,12 +185,13 @@
         }
     });
 
-    loadBtn.addEventListener('click', loadVideo);
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') loadVideo(); });
-
-    // Для демонстрации: предзаполняем твоей ссылкой
-    input.value = 'https://1024terabox.com/s/1302xc38q_rJ7HR6Rrrpobw';
-    loadVideo();
+    // ============= АВТОЗАГРУЗКА =============
+    // Проверяем первый вариант при загрузке
+    setTimeout(() => {
+        if (providers.length > 0) {
+            testProvider(providers[0].id);
+        }
+    }, 500);
 </script>
 </body>
 </html>
