@@ -1,101 +1,39 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Тест плееров TeraBox</title>
-    <style>
-        body { background: #0a0a0a; color: #fff; font-family: sans-serif; padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        h1 { text-align: center; margin-bottom: 30px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .card { background: #1a1a1a; padding: 15px; border-radius: 12px; border: 1px solid #333; }
-        .card h3 { margin-top: 0; color: #ffaa00; font-size: 16px; }
-        .card iframe { width: 100%; height: 250px; border-radius: 8px; border: none; }
-        .card .status { font-size: 13px; margin-top: 8px; padding: 4px 10px; border-radius: 4px; display: inline-block; }
-        .ok { background: #2e7d32; color: #a5d6a7; }
-        .fail { background: #c62828; color: #ef9a9a; }
-        .unknown { background: #f57f17; color: #fff; }
-        .note { font-size: 13px; color: #aaa; margin-top: 5px; }
-        @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
-    </style>
+    <title>TeraBox Video Player</title>
 </head>
 <body>
-<div class="container">
-    <h1>🧪 Тестирование плееров TeraBox</h1>
-    <p style="text-align:center; color:#888;">Ссылка для теста: <code>https://1024terabox.com/s/1OESPcutND0BnZo_xlPqCDA</code></p>
-    <div class="grid" id="playerGrid">
-        <!-- Карточки будут добавлены через JS -->
-    </div>
-</div>
+    <h2>Ваше видео из TeraBox</h2>
+    <video id="myVideo" controls width="800" style="max-width:100%;"></video>
+    <p id="loading">Загрузка...</p>
 
-<script>
-    // Общая ссылка для теста
-    const TEST_LINK = 'https://1024terabox.com/s/1OESPcutND0BnZo_xlPqCDA';
+    <script>
+        // Ваша ссылка на видео
+        const teraboxUrl = 'https://1024terabox.com/s/1THfL5aDSoRQX1O0Usjsbuw';
+        // API для получения прямой ссылки
+        const apiUrl = `https://terabox-worker.robinkumarshakya103.workers.dev/api?url=${encodeURIComponent(teraboxUrl)}`;
 
-    // Список вариантов плееров
-    const variants = [
-        {
-            name: 'terabox.tech (старый)',
-            url: `https://www.terabox.tech/play.html?url=${encodeURIComponent(TEST_LINK)}`,
-            status: 'unknown'
-        },
-        {
-            name: 'tsecurity.de',
-            url: `https://tsecurity.de/TeraBox/?url=${encodeURIComponent(TEST_LINK)}`,
-            status: 'unknown'
-        },
-        {
-            name: 'cu-sanjay.github.io',
-            url: `https://cu-sanjay.github.io/TeraBox/player.html?url=${encodeURIComponent(TEST_LINK)}`,
-            status: 'unknown'
-        },
-        {
-            name: 'sannjay.tech (мёртв)',
-            url: `https://sannjay.tech/TeraBox/player.html?url=${encodeURIComponent(TEST_LINK)}`,
-            status: 'unknown'
-        },
-        {
-            name: 'terabox.app (старый)',
-            url: `https://terabox.app/player.html?url=${encodeURIComponent(TEST_LINK)}`,
-            status: 'unknown'
-        },
-        {
-            name: 'teraboxapps.blogspot',
-            url: `https://teraboxapps.blogspot.com/?url=${encodeURIComponent(TEST_LINK)}`,
-            status: 'unknown'
+        async function loadVideo() {
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+
+                if (data.success && data.files && data.files.length > 0) {
+                    // Берем ссылку для потокового воспроизведения
+                    const videoSrc = data.files[0].streaming_url;
+                    const videoElement = document.getElementById('myVideo');
+                    videoElement.src = videoSrc;
+                    document.getElementById('loading').style.display = 'none';
+                } else {
+                    document.getElementById('loading').textContent = 'Ошибка: не удалось получить ссылку на видео.';
+                }
+            } catch (error) {
+                document.getElementById('loading').textContent = 'Ошибка: ' + error.message;
+            }
         }
-    ];
 
-    // Дополнительно – ваш Cloudflare Worker (если он живой)
-    // (замените URL на ваш, если нужно)
-    variants.push({
-        name: 'Ваш Cloudflare Worker (POST)',
-        url: `https://terabox-proxy.lapcomp.workers.dev/proxy?url=${encodeURIComponent(TEST_LINK)}&file_name=video.mp4`,
-        status: 'unknown'
-    });
-
-    const grid = document.getElementById('playerGrid');
-
-    variants.forEach(v => {
-        const card = document.createElement('div');
-        card.className = 'card';
-
-        let statusText = 'неизвестно';
-        let statusClass = 'unknown';
-        if (v.status === 'ok') { statusText = '✅ работает'; statusClass = 'ok'; }
-        else if (v.status === 'fail') { statusText = '❌ не работает'; statusClass = 'fail'; }
-
-        card.innerHTML = `
-            <h3>${v.name}</h3>
-            <iframe src="${v.url}" allowfullscreen loading="lazy"></iframe>
-            <div>
-                <span class="status ${statusClass}">${statusText}</span>
-                <div class="note">${v.url}</div>
-            </div>
-        `;
-        grid.appendChild(card);
-    });
-</script>
+        loadVideo();
+    </script>
 </body>
 </html>
